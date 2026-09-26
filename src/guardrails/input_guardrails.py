@@ -64,7 +64,7 @@ def detect_injection(user_input: str) -> InputStatus:
         # TODO: Add at least 5 regex patterns
         # Example:
         # r"ignore (all )?(previous|above) instructions",
-        r"\bignore\s+(?:all\s+)?(?:previous|above)\s+instruction\b",
+        r"\bignore\s+(?:all\s+)?(?:previous|above)\s+instructions\b",
         r"\byou\s+are\s+now\b",
         r"\bsystem\s+prompt\b",
         r"\breveal\s+your\s+(?:instructions|prompt)\b",
@@ -106,8 +106,14 @@ def topic_filter(user_input: str) -> InputStatus:
     # 2. If input doesn't contain any allowed topic -> return "BLOCK"
     # 3. Otherwise -> return "ALLOW"
 
-    pass  # Replace with your implementation
+    input_lower = user_input.lower()
 
+    if any(topic in input_lower for topic in BLOCKED_TOPICS):
+        return "BLOCK"
+    if not any (topic in input_lower for topic in ALLOWED_TOPICS):
+        return "BLOCK"
+
+    return "ALLOW"
 
 # ============================================================
 # Implement InputGuardrailPlugin
@@ -164,10 +170,22 @@ class InputGuardrailPlugin(base_plugin.BasePlugin):
         #    - If "BLOCK": increment blocked_count, return self._block_response("...")
         # 2. Call topic_filter(text)
         #    - If "BLOCK": increment blocked_count, return self._block_response("...")
-        # 3. If both return "ALLOW": return None (let message through)
+        # 3. If both return "ALLOW": return None (let message through)   
 
-        pass  # Replace with your implementation
+        # detect injection and topic checking
+        if detect_injection(text) == "BLOCK":
+            self.blocked_count += 1
+            # call block respond
+            return self._block_response("Bruh don't try to trick me")
 
+        if topic_filter(text) =="BLOCK":
+            self.blocked_count += 1
+            return self._block_response("Stop tap dancing around the conversation")
+
+        return None
+
+        
+        # return ALLOW
 
 # ============================================================
 # Quick tests

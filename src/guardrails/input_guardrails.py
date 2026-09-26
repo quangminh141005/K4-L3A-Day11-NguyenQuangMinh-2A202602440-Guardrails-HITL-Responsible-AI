@@ -13,6 +13,8 @@ from __future__ import annotations
 import re
 from typing import Literal
 
+import unicodedata
+
 from google.genai import types
 from google.adk.plugins import base_plugin
 from google.adk.agents.invocation_context import InvocationContext
@@ -51,10 +53,23 @@ def detect_injection(user_input: str) -> InputStatus:
     Returns:
         ``"BLOCK"`` if injection detected (chặn), ``"ALLOW"`` otherwise (cho qua).
     """
+    text = unicodedata.normalize("NFKC", user_input) # normalize unicode 
+    text = "".join(
+        char for char in text
+        if unicodedata.category(char) != "cf" # remove invisible character
+    )
+    text = " ".join(text.split())
+
     INJECTION_PATTERNS = [
         # TODO: Add at least 5 regex patterns
         # Example:
         # r"ignore (all )?(previous|above) instructions",
+        r"\bignore\s+(?:all\s+)?(?:previous|above)\s+instruction\b",
+        r"\byou\s+are\s+now\b",
+        r"\bsystem\s+prompt\b",
+        r"\breveal\s+your\s+(?:instructions|prompt)\b",
+        r"\bpretend\s+you\s+are\b"
+        r"\bact\s+as\s+(?:a\s+|an\s+)?unrestricted\b",
     ]
 
     for pattern in INJECTION_PATTERNS:
